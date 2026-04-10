@@ -12,6 +12,7 @@ jobs:
   generate-digest:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
 
     steps:

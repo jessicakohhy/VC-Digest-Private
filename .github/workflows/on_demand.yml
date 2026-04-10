@@ -10,6 +10,7 @@ jobs:
     if: github.event.label.name == 'vc-query'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
 
     steps:
