@@ -3,7 +3,7 @@ Main entry point.
 
 Usage:
   python digest.py digest              # run the daily digest
-  python digest.py on-demand <issue_number> <topic>
+  python digest.py on-demand <topic>   # generate a reading list and email it
 """
 
 import os
@@ -13,9 +13,9 @@ from datetime import datetime, timezone
 import anthropic
 import pytz
 
+from email_client import send_email
 from fetcher import fetch_all_buckets, load_sources
-from formatter import format_digest, format_on_demand_comment
-from github_client import GitHubClient
+from formatter import format_digest_email, format_on_demand_email
 from summariser import generate_tldr, handle_on_demand_query, summarise_bucket
 
 SGT = pytz.timezone("Asia/Singapore")
@@ -47,8 +47,6 @@ def run_digest():
     print(f"Running digest — {now.isoformat()} (weekend/holiday: {is_weekend})")
 
     claude = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    gh = GitHubClient()
-    gh.ensure_labels()
 
     print("Fetching RSS feeds...")
     sources = load_sources()
@@ -64,24 +62,20 @@ def run_digest():
     print("Generating TLDR...")
     tldr = generate_tldr(bucket_summaries, claude)
 
-    title, body = format_digest(now, tldr, bucket_summaries, is_weekend)
+    subject, html = format_digest_email(now, tldr, bucket_summaries, is_weekend)
 
-    print(f"Posting issue: {title}")
-    issue = gh.create_issue(title, body, labels=["daily-digest"])
-    print(f"Done → {issue['html_url']}")
+    print(f"Sending email: {subject}")
+    send_email(subject, html)
+    print("Done.")
 
 
-def run_on_demand(issue_number: int, topic: str):
-    print(f"On-demand query: '{topic}' (issue #{issue_number})")
-
+def run_on_demand(topic: str):
+    print(f"On-demand query: '{topic}'")
     claude = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    gh = GitHubClient()
-
     content = handle_on_demand_query(topic, claude)
-    comment = format_on_demand_comment(topic, content)
-    gh.create_comment(issue_number, comment)
-    gh.close_issue(issue_number)
-    print(f"Posted reading list on issue #{issue_number}")
+    subject, html = format_on_demand_email(topic, content)
+    send_email(subject, html)
+    print(f"Sent reading list for '{topic}'")
 
 
 if __name__ == "__main__":
@@ -90,10 +84,10 @@ if __name__ == "__main__":
     if mode == "digest":
         run_digest()
     elif mode == "on-demand":
-        if len(sys.argv) < 4:
-            print("Usage: digest.py on-demand <issue_number> <topic>")
+        if len(sys.argv) < 3:
+            print("Usage: digest.py on-demand <topic>")
             sys.exit(1)
-        run_on_demand(int(sys.argv[2]), sys.argv[3])
+        run_on_demand(sys.argv[2])
     else:
         print(f"Unknown mode: {mode}")
         sys.exit(1)

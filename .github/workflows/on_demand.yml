@@ -1,17 +1,16 @@
 name: On-Demand Reading List
 
 on:
-  issues:
-    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Topic for reading list (e.g. vertical SaaS in SEA)"
+        required: true
+        type: string
 
 jobs:
   generate-reading-list:
-    # Only run when the vc-query label is applied
-    if: github.event.label.name == 'vc-query'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
 
     steps:
       - uses: actions/checkout@v4
@@ -24,22 +23,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Extract topic from issue title
-        id: topic
-        env:
-          TITLE: ${{ github.event.issue.title }}
-        run: |
-          # Strip leading "Query: " or "query: " prefix if present
-          TOPIC="${TITLE#Query: }"
-          TOPIC="${TOPIC#query: }"
-          echo "value=$TOPIC" >> "$GITHUB_OUTPUT"
-
-      - name: Generate and post reading list
+      - name: Generate and send reading list
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPO: ${{ github.repository }}
-        run: |
-          python src/digest.py on-demand \
-            "${{ github.event.issue.number }}" \
-            "${{ steps.topic.outputs.value }}"
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+        run: python src/digest.py on-demand "${{ github.event.inputs.topic }}"

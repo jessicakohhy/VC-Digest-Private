@@ -6,14 +6,11 @@ on:
     - cron: "30 0 * * 1-5"
     # Weekends 11:00 SGT = 03:00 UTC (Sat–Sun)
     - cron: "0 3 * * 0,6"
-  workflow_dispatch: # allow manual trigger from GitHub UI or /digest issue
+  workflow_dispatch: # allow manual trigger from the Actions tab
 
 jobs:
   generate-digest:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
 
     steps:
       - uses: actions/checkout@v4
@@ -26,9 +23,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Generate and post digest
+      - name: Generate and send digest
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPO: ${{ github.repository }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
         run: python src/digest.py digest

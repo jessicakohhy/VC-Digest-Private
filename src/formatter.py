@@ -1,4 +1,4 @@
-"""Markdown formatter for GitHub Issues."""
+"""HTML email formatter for the VC digest."""
 
 from datetime import datetime, timezone
 from typing import Dict
@@ -8,67 +8,183 @@ import pytz
 SGT = pytz.timezone("Asia/Singapore")
 
 
-def format_digest(
+def _bucket_html(bucket_data: dict) -> str:
+    stories = bucket_data.get("stories", [])
+    name = bucket_data.get("name", "")
+
+    html = f"""
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr>
+        <td style="padding:12px 0 8px 0; border-bottom:2px solid #e5e7eb;">
+          <span style="font-size:16px; font-weight:700; color:#111827;">{name}</span>
+        </td>
+      </tr>
+    """
+
+    if not stories:
+        html += """
+      <tr><td style="padding:12px 0; color:#6b7280; font-style:italic;">
+        No significant stories in this window.
+      </td></tr>"""
+    else:
+        for story in stories:
+            lock = " 🔒" if story.get("paywalled") else ""
+            url = story.get("url", "")
+            source = story.get("source", "")
+            headline = story.get("headline", "")
+            summary = story.get("summary", "")
+            vc_angle = story.get("vc_angle", "")
+
+            source_html = f'<a href="{url}" style="color:#6b7280; text-decoration:none;">{source}</a>' if url else source
+
+            html += f"""
+      <tr>
+        <td style="padding:12px 0; border-bottom:1px solid #f3f4f6;">
+          <div style="font-size:14px; font-weight:600; color:#111827; margin-bottom:4px;">
+            {headline}{lock} &nbsp;·&nbsp; {source_html}
+          </div>
+          <div style="font-size:14px; color:#374151; line-height:1.5;">
+            {summary} <span style="color:#6b7280; font-style:italic;">{vc_angle}</span>
+          </div>
+        </td>
+      </tr>"""
+
+    html += "</table>"
+    return html
+
+
+def format_digest_email(
     now: datetime,
     tldr: str,
     bucket_summaries: Dict[str, dict],
     is_weekend: bool,
 ) -> tuple[str, str]:
-    """Return (issue_title, issue_body) for the daily digest."""
+    """Return (subject, html) for the daily digest email."""
     sgt = now.astimezone(SGT)
     date_str = sgt.strftime("%A, %d %B %Y")
-    edition = "Weekend Edition" if is_weekend else "Weekday Edition"
+    edition = "Weekend" if is_weekend else "Weekday"
+    subject = f"VC Digest — {date_str}"
 
-    title = f"VC Daily Digest — {date_str}"
-
-    lines = [
-        f"# VC Daily Digest",
-        f"**{date_str}** · {edition} · _Generated {sgt.strftime('%H:%M SGT')}_",
-        "",
-        "---",
-        "",
-        "## 📋 TLDR",
-        "",
-        tldr,
-        "",
-        "---",
-        "",
+    # TLDR bullets
+    tldr_lines = [
+        f'<li style="margin-bottom:6px;">{line.lstrip("- ").strip()}</li>'
+        for line in tldr.strip().split("\n")
+        if line.strip()
     ]
+    tldr_html = "<ul style='margin:0; padding-left:20px; color:#374151; font-size:14px; line-height:1.6;'>" \
+                + "".join(tldr_lines) + "</ul>"
 
-    for bucket_data in bucket_summaries.values():
-        lines.append(f"## {bucket_data['name']}")
-        lines.append("")
-        stories = bucket_data.get("stories", [])
+    buckets_html = "".join(_bucket_html(data) for data in bucket_summaries.values())
 
-        if not stories:
-            lines.append("_No significant stories in this window._")
-        else:
-            for story in stories:
-                lock = " 🔒" if story.get("paywalled") else ""
-                src = story["source"]
-                url = story.get("url", "")
-                src_link = f"[{src}]({url})" if url else src
+    html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0; padding:0; background:#f9fafb; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;">
+    <tr><td align="center" style="padding:32px 16px;">
 
-                lines.append(f"- **{story['headline']}**{lock} · {src_link}")
-                lines.append(f"  {story['summary']} *{story['vc_angle']}*")
-                lines.append("")
+      <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
 
-        lines += ["---", ""]
+        <!-- Header -->
+        <tr>
+          <td style="background:#111827; padding:24px 32px;">
+            <div style="font-size:20px; font-weight:700; color:#ffffff; letter-spacing:-0.3px;">
+              VC Daily Digest
+            </div>
+            <div style="font-size:13px; color:#9ca3af; margin-top:4px;">
+              {date_str} &nbsp;·&nbsp; {edition} Edition &nbsp;·&nbsp; {sgt.strftime('%H:%M SGT')}
+            </div>
+          </td>
+        </tr>
 
-    lines += [
-        "_Want a deeper dive? Create an issue titled `Query: your topic` and add the `vc-query` label — "
-        "the bot will post a reading list within minutes._",
-    ]
+        <!-- Body -->
+        <tr>
+          <td style="padding:28px 32px;">
 
-    return title, "\n".join(lines)
+            <!-- TLDR -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f9ff; border-left:3px solid #0ea5e9; border-radius:0 6px 6px 0; margin-bottom:28px;">
+              <tr>
+                <td style="padding:16px 20px;">
+                  <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#0369a1; margin-bottom:10px;">
+                    📋 TLDR
+                  </div>
+                  {tldr_html}
+                </td>
+              </tr>
+            </table>
+
+            <!-- Buckets -->
+            {buckets_html}
+
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#f9fafb; padding:16px 32px; border-top:1px solid #e5e7eb;">
+            <div style="font-size:12px; color:#9ca3af; text-align:center;">
+              Generated by VC Digest &nbsp;·&nbsp; Powered by Claude
+            </div>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    return subject, html
 
 
-def format_on_demand_comment(topic: str, content: str) -> str:
-    """Return the comment body for an on-demand reading list."""
+def format_on_demand_email(topic: str, content: str) -> tuple[str, str]:
+    """Return (subject, html) for an on-demand reading list email."""
     sgt_now = datetime.now(SGT)
-    return (
-        f"## Reading List: {topic}\n\n"
-        f"{content}\n\n"
-        f"---\n"
-        f"_Generated at {sgt_now.strftime('%H:%M SGT on %d %b %Y')}_"
-    )
+    subject = f"Reading List: {topic}"
+
+    # Convert markdown-ish content to simple HTML
+    lines = content.strip().split("\n")
+    body_html = ""
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            body_html += "<br>"
+        elif stripped.startswith("### "):
+            body_html += f'<h3 style="font-size:15px; font-weight:700; color:#111827; margin:20px 0 8px 0;">{stripped[4:]}</h3>'
+        elif stripped.startswith("## "):
+            body_html += f'<h2 style="font-size:16px; font-weight:700; color:#111827; margin:20px 0 8px 0;">{stripped[3:]}</h2>'
+        elif stripped.startswith("- "):
+            body_html += f'<p style="font-size:14px; color:#374151; line-height:1.6; margin:0 0 10px 0; padding-left:12px; border-left:2px solid #e5e7eb;">{stripped[2:]}</p>'
+        else:
+            body_html += f'<p style="font-size:14px; color:#374151; line-height:1.6; margin:0 0 8px 0;">{stripped}</p>'
+
+    html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0; padding:0; background:#f9fafb; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+        <tr>
+          <td style="background:#111827; padding:24px 32px;">
+            <div style="font-size:20px; font-weight:700; color:#ffffff;">Reading List</div>
+            <div style="font-size:13px; color:#9ca3af; margin-top:4px;">{topic} &nbsp;·&nbsp; {sgt_now.strftime('%d %b %Y, %H:%M SGT')}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:28px 32px;">
+            {body_html}
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f9fafb; padding:16px 32px; border-top:1px solid #e5e7eb;">
+            <div style="font-size:12px; color:#9ca3af; text-align:center;">Generated by VC Digest &nbsp;·&nbsp; Powered by Claude</div>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    return subject, html
