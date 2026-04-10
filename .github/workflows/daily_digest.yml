@@ -1,0 +1,33 @@
+name: Daily VC Digest
+
+on:
+  schedule:
+    # Weekdays 8:30 SGT = 00:30 UTC (Mon–Fri)
+    - cron: "30 0 * * 1-5"
+    # Weekends 11:00 SGT = 03:00 UTC (Sat–Sun)
+    - cron: "0 3 * * 0,6"
+  workflow_dispatch: # allow manual trigger from GitHub UI or /digest issue
+
+jobs:
+  generate-digest:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate and post digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+        run: python src/digest.py digest

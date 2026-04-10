@@ -1,0 +1,103 @@
+buckets:
+  global_headlines:
+    name: "🌍 Global Headlines"
+    description: "macro news, geopolitics, major market moves"
+    feeds:
+      - name: "Financial Times"
+        url: "https://www.ft.com/rss/home"
+        paywalled: true
+      - name: "The Economist"
+        url: "https://www.economist.com/finance-and-economics/rss.xml"
+        paywalled: true
+      - name: "Bloomberg"
+        url: "https://feeds.bloomberg.com/markets/news.rss"
+        paywalled: true
+      - name: "Wall Street Journal"
+        url: "https://feeds.a.dj.com/rss/RSSWorldNews.xml"
+        paywalled: true
+      - name: "Reuters"
+        url: "https://feeds.reuters.com/reuters/businessNews"
+        paywalled: false
+
+  singapore_local:
+    name: "🇸🇬 Singapore Local"
+    description: "policy, economy, local business, MAS/government updates"
+    feeds:
+      - name: "Business Times"
+        url: "https://www.businesstimes.com.sg/rss/all-news"
+        paywalled: true
+      - name: "Straits Times"
+        url: "https://www.straitstimes.com/news/singapore/rss.xml"
+        paywalled: false
+      - name: "Channel NewsAsia"
+        url: "https://www.channelnewsasia.com/rssfeeds/8395986"
+        paywalled: false
+      - name: "MAS News"
+        url: "https://www.mas.gov.sg/rss/news"
+        paywalled: false
+
+  sea_tech:
+    name: "🌏 SEA Tech & Startups"
+    description: "funding rounds, founder news, regional market shifts"
+    feeds:
+      - name: "TechInAsia"
+        url: "https://www.techinasia.com/feed"
+        paywalled: false
+      - name: "DealStreetAsia"
+        url: "https://www.dealstreetasia.com/feed/"
+        paywalled: true
+      - name: "e27"
+        url: "https://e27.co/feed/"
+        paywalled: false
+      - name: "Nikkei Asia"
+        url: "https://asia.nikkei.com/rss/feed/nar"
+        paywalled: true
+      - name: "SCMP Tech"
+        url: "https://www.scmp.com/rss/5/feed"
+        paywalled: false
+
+  ai_news:
+    name: "🤖 AI News"
+    description: "model releases, research breakthroughs, enterprise AI adoption, regulatory moves"
+    feeds:
+      - name: "Import AI"
+        url: "https://importai.substack.com/feed"
+        paywalled: false
+      - name: "The Rundown AI"
+        url: "https://www.therundown.ai/rss"
+        paywalled: false
+      - name: "a16z Blog"
+        url: "https://a16z.com/feed/"
+        paywalled: false
+      - name: "Hugging Face Blog"
+        url: "https://huggingface.co/blog/feed.xml"
+        paywalled: false
+      - name: "DeepMind Blog"
+        url: "https://deepmind.google/blog/rss.xml"
+        paywalled: false
+
+  global_tech:
+    name: "💻 Global Tech"
+    description: "big tech moves, product launches, industry shifts outside SEA"
+    feeds:
+      - name: "TechCrunch"
+        url: "https://techcrunch.com/feed/"
+        paywalled: false
+      - name: "The Verge"
+        url: "https://www.theverge.com/rss/index.xml"
+        paywalled: false
+      - name: "Wired"
+        url: "https://www.wired.com/feed/rss"
+        paywalled: false
+      - name: "Stratechery"
+        url: "https://stratechery.com/feed/"
+        paywalled: true
+      - name: "Benedict Evans"
+        url: "https://www.ben-evans.com/benedictevans/rss.xml"
+        paywalled: false
+      - name: "First Round Review"
+        url: "https://review.firstround.com/feed.xml"
+        paywalled: false
+      - name: "NFX Essays"
+        url: "https://www.nfx.com/feed"
+        paywalled: false
