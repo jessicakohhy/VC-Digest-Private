@@ -47,7 +47,7 @@ Return a JSON array — no other text:
 Prioritise: funding activity, regulatory shifts, technology inflection points, competitive dynamics, market structure changes."""
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-3-5-sonnet-20241022",
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -100,7 +100,7 @@ Write a TLDR of 3-5 bullet points. Each bullet must:
 Return only markdown bullet points (using - ). No heading, no preamble."""
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-3-5-sonnet-20241022",
         max_tokens=400,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -129,7 +129,7 @@ Use real publication names (TechInAsia, Bloomberg, a16z, McKinsey, etc.). Be spe
 Return only the markdown content, no preamble."""
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-3-5-sonnet-20241022",
         max_tokens=1500,
         messages=[{"role": "user", "content": prompt}],
     )
