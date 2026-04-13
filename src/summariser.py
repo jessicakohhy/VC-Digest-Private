@@ -1,8 +1,20 @@
 """Claude-powered summarisation for the digest and on-demand queries."""
 
 import json
+import re
 import anthropic
 from typing import Dict, List
+
+MODEL = "claude-sonnet-4-5"
+
+
+def _parse_json(text: str) -> list:
+    """Parse JSON from Claude response, stripping any markdown code fences."""
+    text = text.strip()
+    # Remove ```json ... ``` or ``` ... ``` wrappers if present
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    return json.loads(text.strip())
 
 
 def summarise_bucket(
@@ -34,7 +46,7 @@ Select the 3-4 most important articles for a VC investor. For each, provide:
 1. A one-sentence summary of what happened (factual, specific)
 2. A one-sentence "why it matters for a VC" insight (investment angle, market signal, or risk)
 
-Return a JSON array — no other text:
+Return ONLY a JSON array, no other text, no markdown fences:
 [
   {{
     "index": <1-based article index>,
@@ -47,13 +59,16 @@ Return a JSON array — no other text:
 Prioritise: funding activity, regulatory shifts, technology inflection points, competitive dynamics, market structure changes."""
 
     response = client.messages.create(
-        model="claude-3-haiku-20240307",
+        model=MODEL,
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}],
     )
 
+    raw = response.content[0].text
+    print(f"  [summariser] Raw response for {bucket_name}: {raw[:100]!r}")
+
     try:
-        selected = json.loads(response.content[0].text)
+        selected = _parse_json(raw)
         result = []
         for item in selected:
             idx = item["index"] - 1
@@ -100,7 +115,7 @@ Write a TLDR of 3-5 bullet points. Each bullet must:
 Return only markdown bullet points (using - ). No heading, no preamble."""
 
     response = client.messages.create(
-        model="claude-3-haiku-20240307",
+        model=MODEL,
         max_tokens=400,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -129,7 +144,7 @@ Use real publication names (TechInAsia, Bloomberg, a16z, McKinsey, etc.). Be spe
 Return only the markdown content, no preamble."""
 
     response = client.messages.create(
-        model="claude-3-haiku-20240307",
+        model=MODEL,
         max_tokens=1500,
         messages=[{"role": "user", "content": prompt}],
     )
