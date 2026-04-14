@@ -2,6 +2,7 @@
 
 import json
 import re
+import time
 import anthropic
 from typing import Dict, List
 
@@ -58,13 +59,26 @@ Return ONLY a JSON array, no other text, no markdown fences:
 
 Prioritise: funding activity, regulatory shifts, technology inflection points, competitive dynamics, market structure changes."""
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=1000,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    raw = None
+    for attempt in range(4):
+        try:
+            response = client.messages.create(
+                model=MODEL,
+                max_tokens=1000,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = response.content[0].text
+            break
+        except anthropic.APIStatusError as e:
+            if e.status_code == 529 and attempt < 3:
+                wait = 30 * (attempt + 1)
+                print(f"  [summariser] API overloaded, retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
 
-    raw = response.content[0].text
+    if raw is None:
+        return []
     print(f"  [summariser] Raw response for {bucket_name}: {raw[:100]!r}")
 
     try:
@@ -114,13 +128,22 @@ Write a TLDR of 3-5 bullet points. Each bullet must:
 
 Return only markdown bullet points (using - ). No heading, no preamble."""
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=400,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    return response.content[0].text.strip()
+    for attempt in range(4):
+        try:
+            response = client.messages.create(
+                model=MODEL,
+                max_tokens=400,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return response.content[0].text.strip()
+        except anthropic.APIStatusError as e:
+            if e.status_code == 529 and attempt < 3:
+                wait = 30 * (attempt + 1)
+                print(f"  [summariser] API overloaded, retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
+    return "_No TLDR available._"
 
 
 def handle_on_demand_query(topic: str, client: anthropic.Anthropic) -> str:
